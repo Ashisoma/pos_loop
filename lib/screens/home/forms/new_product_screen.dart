@@ -440,8 +440,8 @@ class _NewProductScreenState extends State<NewProductScreen> {
         isService: _isService,
         quantity: _isService ? 0 : int.parse(_quantityController.text),
         wholesalePrice:
-            _isService ? 0 : double.parse(_wholesalePriceController.text),
-        unitPrice: _isService ? 0 : double.parse(_unitPriceController.text),
+            _isService ? 0.0 : double.parse(_wholesalePriceController.text),
+        unitPrice: _isService ? 0.0 : double.parse(_unitPriceController.text),
         shopId: widget.shopId,
         buyingPrice: double.parse(_buyingPriceController.text),
         barcode: widget.product!.barcode,
@@ -484,8 +484,8 @@ class _NewProductScreenState extends State<NewProductScreen> {
         isService: _isService,
         quantity: _isService ? 0 : int.parse(_quantityController.text),
         wholesalePrice:
-            _isService ? 0 : double.parse(_wholesalePriceController.text),
-        unitPrice: _isService ? 0 : double.parse(_unitPriceController.text),
+            _isService ? 0.0 : double.parse(_wholesalePriceController.text),
+        unitPrice: _isService ? 0.0 : double.parse(_unitPriceController.text),
         shopId: widget.shopId,
         buyingPrice: double.parse(_buyingPriceController.text),
         restockLevel: int.tryParse(_restockController.text) ?? 0,
