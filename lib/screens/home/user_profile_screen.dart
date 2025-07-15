@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/constants/app_colors.dart';
+import 'package:pos_desktop_loop/db/tables/user_table.dart';
+import 'package:pos_desktop_loop/providers/user_provider.dart';
+import 'package:provider/provider.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userName = "Admin User"; // Replace with actual user name
@@ -8,9 +11,9 @@ class UserProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = _getInitials(userName);
+    // final initials = ;
     final theme = Theme.of(context);
-
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -26,7 +29,7 @@ class UserProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             // Profile Header
-            _buildProfileHeader(initials),
+            _buildProfileHeader(userProvider.user!),
 
             // Account Section
             _buildSectionCard(
@@ -99,11 +102,12 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(String initials) {
+  Widget _buildProfileHeader(UserTable user) {
+    var initials = user.fullName;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -145,7 +149,7 @@ class UserProfileScreen extends StatelessWidget {
 
           // User Name
           Text(
-            userName,
+            user.fullName,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
           ),
 
@@ -153,7 +157,7 @@ class UserProfileScreen extends StatelessWidget {
 
           // User Role
           Text(
-            'System Administrator',
+            user.role!.toUpperCase(),
             style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
           ),
 

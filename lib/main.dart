@@ -6,6 +6,7 @@ import 'package:pos_desktop_loop/providers/inventory_provider.dart';
 import 'package:pos_desktop_loop/providers/product_provider.dart';
 import 'package:pos_desktop_loop/providers/user_provider.dart';
 import 'package:pos_desktop_loop/providers/people_provider.dart';
+import 'package:pos_desktop_loop/screens/home/settings_screen.dart';
 import 'package:pos_desktop_loop/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
@@ -23,6 +24,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
         ChangeNotifierProvider(create: (_) => InventoryByShopProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: MyApp(),
     ),

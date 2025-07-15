@@ -17,6 +17,7 @@ class _SupplierItemCardState extends State<SupplierItemCard> {
   bool _isExpanded = false;
 
   void _toggleExpanded() => setState(() => _isExpanded = !_isExpanded);
+  
 
   @override
   Widget build(BuildContext context) {

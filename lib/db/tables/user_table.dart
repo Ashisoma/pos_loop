@@ -131,9 +131,9 @@ class UserTable {
     return users.map((e) => UserTable.fromSqfliteDataBase(e)).toList();
   }
 
-  static Future<void> updateUserProfile(UserTable user) async {
+  static Future<int?> updateUserProfile(UserTable user) async {
     Database db = await DatabaseHelper().database;
-    await db.update(
+    return await db.update(
       tableUsers,
       user.toJson(),
       where: 'id = ?',

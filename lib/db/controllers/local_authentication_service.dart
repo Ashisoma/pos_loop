@@ -87,10 +87,14 @@ class AuthService {
       UserTable.userExistsLocal(phone);
 
   static Future<void> deleteToken(int id) => UserTable.deleteToken(id);
-  static Future<void> updateUserProfile(UserTable user) =>
-      UserTable.updateUserProfile(user);
+  static Future<int?> updateUserProfile(UserTable user) {
+    return UserTable.updateUserProfile(user);
+  }
 
-  static Future<int?> assignUserToShop(int user, int shopId) async {
-    return await ShopTable.setManagerId(user, shopId);
+  static Future<int?> assignUserToShop({
+    required int user,
+    required int shopId,
+  }) async {
+    return await ShopTable.setManagerId(shopId: shopId, managerId: user);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/constants/app_colors.dart';
+import 'package:pos_desktop_loop/screens/home/user_profile_screen.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -322,9 +323,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              _buildSectionTitle("Profile"),
+              _buildSettingsItem(Icons.person_2, 'My Profile', () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => UserProfileScreen()),
+                );
+              }),
 
               // Preferences Section
               _buildSectionTitle("Preferences"),
+              _buildSettingsItem(
+                Icons.card_giftcard,
+                'Subscription Plan',
+                () {},
+              ),
               _buildThemeModeSetting(context),
 
               // App Settings Section

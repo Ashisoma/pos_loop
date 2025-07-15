@@ -101,7 +101,8 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(
+                      readOnly: widget.isEdit,
+                      decoration: InputDecoration(
                         labelText: 'Email*',
                         border: OutlineInputBorder(),
                       ),
@@ -122,13 +123,17 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: !_visiblePassword,
+
+                      obscureText: widget.isEdit ? true : !_visiblePassword,
                       decoration: InputDecoration(
                         labelText: 'Password*',
+                        
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _visiblePassword
+                            widget.isEdit
+                                ? Icons.visibility_off
+                                : _visiblePassword
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                           ),
@@ -138,6 +143,7 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                               ),
                         ),
                       ),
+                      readOnly: widget.isEdit,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a password';
@@ -151,23 +157,30 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<RoleItem>(
-                      value: _selectedRole,
+                      value:
+                          _selectedRole, // Ensure this is either null or a valid item from RoleItem.items
                       decoration: const InputDecoration(
                         labelText: 'Role*',
                         border: OutlineInputBorder(),
                       ),
                       items:
-                          RoleItem.items.map((role) {
-                            return DropdownMenuItem<RoleItem>(
-                              value: role,
-                              child: Text(role.name),
-                            );
-                          }).toList(),
+                          RoleItem.items
+                              .map(
+                                (role) => DropdownMenuItem<RoleItem>(
+                                  value: role,
+                                  child: Text(role.name),
+                                ),
+                              )
+                              .toList(),
                       onChanged:
                           _isLoading
                               ? null
-                              : (value) =>
-                                  setState(() => _selectedRole = value),
+                              : (RoleItem? newValue) {
+                                // Explicit type helps
+                                if (newValue != null) {
+                                  setState(() => _selectedRole = newValue);
+                                }
+                              },
                       validator:
                           (value) =>
                               value == null ? 'Please select a role' : null,
@@ -215,7 +228,7 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _registerUser,
+                          onPressed: _isLoading ? null : _registerOrUpdateUser,
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(120, 48),
                           ),
@@ -245,30 +258,58 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
     );
   }
 
-  void _registerUser() async {
+  void _registerOrUpdateUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
       final user = UserTable(
+        id: widget.isEdit ? widget.data!.id : null, // Include for update
         phoneNumber: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         role: _selectedRole?.value ?? 'cashier',
         fullName: _fullNameController.text.trim(),
-        sync: 0,
+        sync: widget.isEdit ? widget.data!.sync : 0, // Preserve sync status
         isActive: true,
       );
-      int? res = await AuthService.register(user);
 
-      // assign user to a shop if role is not admin
+      int? res;
+      if (widget.isEdit) {
+        // Update existing user
+        res = await AuthService.updateUserProfile(user);
+      } else {
+        // Register new user
+        res = await AuthService.register(user);
+      }
+
+      if (res == null || res <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isEdit ? 'Failed to update user' : 'User already exists',
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Handle shop assignment for non-admin roles
       if (_selectedRole?.value != 'admin') {
         int shopId =
             _selectedShops.isNotEmpty ? _selectedShops.first.shopId! : 0;
+
+        print(shopId);
         if (shopId > 0) {
-          int? rest = await AuthService.assignUserToShop(res!, shopId);
-          if (rest == null || rest <= 0) {
+          int? assignmentResult = await AuthService.assignUserToShop(
+            user: widget.isEdit ? widget.data!.id! : res,
+            shopId: shopId,
+          );
+
+          // print(assignmentResult);
+
+          if (assignmentResult == null || assignmentResult <= 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Failed to assign user to shop')),
             );
@@ -277,19 +318,17 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
         }
       }
 
-      if (res! > 0) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const PeopleManagementScreen()),
-        );
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User already exists')));
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const PeopleManagementScreen()),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration failed: ${e.toString()}')),
+        SnackBar(
+          content: Text(
+            '${widget.isEdit ? 'Update' : 'Registration'} failed: ${e.toString()}',
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -340,6 +379,16 @@ class RoleItem {
   final String value;
 
   RoleItem({required this.name, required this.value});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RoleItem &&
+          runtimeType == other.runtimeType &&
+          value == other.value;
+
+  @override
+  int get hashCode => value.hashCode;
 
   @override
   String toString() => name;

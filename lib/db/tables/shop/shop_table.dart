@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/db/helpers/database_helper.dart';
+import 'package:pos_desktop_loop/db/tables/user_table.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ShopTable {
@@ -148,15 +150,47 @@ class ShopTable {
   }
 
   // set manager id for a shop
-  static Future<int> setManagerId(int shopId, int managerId) async {
+  static Future<int> setManagerId({
+    required int shopId,
+    required int managerId,
+  }) async {
     Database db = await DatabaseHelper().database;
+    try {
+        debugPrint('Shop with id $shopId');
 
-    return await db.update(
-      tableShop,
-      {'manager_id': managerId},
-      where: 'shop_id = ?',
-      whereArgs: [shopId],
-    );
+      final shop = await getShopById(shopId);
+      if (shop == null) {
+        debugPrint('Shop with id $shopId not found');
+        return 0;
+      }
+
+      // Debug: Verify manager exists (if you have a users table)
+      final manager = await UserTable.getUserById(managerId);
+      if (manager == null) {
+        debugPrint('Manager with id $managerId not found');
+        return 0;
+      }
+
+      var updateShop = ShopTable(
+        shopId: shopId,
+        name: shop!.name,
+        phone: shop.phone,
+        branch: shop.branch,
+        isActive: shop.isActive,
+        managerId: managerId,
+      );
+
+      var result = await db.update(
+        tableShop,
+        updateShop.toJson(),
+        where: 'shop_id = ?',
+        whereArgs: [shopId],
+      );
+      return result;
+    } catch (e) {
+      debugPrint('Error in setManagerId: $e');
+      return 0;
+    }
   }
 
   static Future<int> updateShop(ShopTable shop) async {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/constants/app_colors.dart';
+import 'package:pos_desktop_loop/db/tables/costomer_table.dart';
+import 'package:pos_desktop_loop/db/tables/supplier_table.dart';
 import 'package:pos_desktop_loop/db/tables/user_table.dart';
 import 'package:pos_desktop_loop/providers/people_provider.dart';
 import 'package:pos_desktop_loop/screens/home/forms/new_customer_form.dart';
@@ -25,6 +27,7 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
   late TabController _tabController;
   bool _isSearching = false;
   int? businessId;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -73,17 +76,7 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
         ),
         title:
             _isSearching
-                ? TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'Search...',
-                    border: InputBorder.none,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: _toggleSearch,
-                    ),
-                  ),
-                )
+                ? _buildSearchField()
                 : const Text(
                   'People Management',
                   style: TextStyle(
@@ -127,49 +120,106 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
         ],
       ),
       drawer: const CustomDrawerWidget(),
-      body: Consumer<PeopleProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return TabBarView(
+      body:  TabBarView(
             controller: _tabController,
             children: [
-              _buildTabContent(
-                items: provider.users,
-                builder:
-                    (item) => UserItemCard(
-                      user: item,
-                      onUpdate:
-                          () => provider.refreshData(), // Add this callback
-                    ),
-              ),
-              _buildTabContent(
-                items: provider.customers,
-                builder: (item) => CustomerItemCard(customer: item),
-              ),
-              _buildTabContent(
-                items: provider.suppliers,
-                builder: (item) => SupplierItemCard(supplier: item),
-              ),
-            ],
-          );
-        },
+              Consumer<PeopleProvider>(
+      builder: (context, provider, _) {
+        final users = _searchUsers(provider.users, _searchQuery);
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (_, index) => UserItemCard(
+            user: users[index],
+            onUpdate: provider.refreshData,
+          ),
+        );
+      },
+    ),
+
+    // Customers Tab
+    Consumer<PeopleProvider>(
+      builder: (context, provider, _) {
+        final customers = _searchCustomers(provider.customers, _searchQuery);
+        return ListView.builder(
+          itemCount: customers.length,
+          itemBuilder: (_, index) => CustomerItemCard(
+            customer: customers[index],
+            // onUpdate: provider.refreshData,
+          ),
+        );
+      },
+    ),
+
+    // Suppliers Tab
+    Consumer<PeopleProvider>(
+      builder: (context, provider, _) {
+        final suppliers = _searchSuppliers(provider.suppliers, _searchQuery);
+        return ListView.builder(
+          itemCount: suppliers.length,
+          itemBuilder: (_, index) => SupplierItemCard(
+            supplier: suppliers[index],
+            // onUpdate: provider.refreshData,
+          ),
+        );
+      },
+    ),
+            ]
       ),
     );
   }
 
-  Widget _buildTabContent<T>({
-    required List<T> items,
-    required Widget Function(T) builder,
-  }) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: items.length,
-      itemBuilder: (context, index) => builder(items[index]),
+  Widget _buildSearchField() {
+    return TextField(
+      decoration: InputDecoration(
+        hintText: _getSearchHintText(),
+        prefixIcon: Icon(Icons.search),
+        border: InputBorder.none,
+      ),
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+        });
+      },
     );
   }
+
+  String _getSearchHintText() {
+    switch (_tabController.index) {
+      case 0: // Users
+        return 'name or email ${_tabController.index}';
+      case 1: // Customers
+        return 'name or phone ${_tabController.index}';
+      case 2: // Suppliers
+        return 'company, ${_tabController.index} contact or phone ';
+      default:
+        return 'Search';
+    }
+  }
+
+  List<UserTable> _searchUsers(List<UserTable> users, String query) {
+  if (query.isEmpty) return users;
+  return users.where((user) =>
+    user.fullName.toLowerCase().contains(query.toLowerCase()) ||
+    user.email.toLowerCase().contains(query.toLowerCase())
+  ).toList();
+}
+
+List<CustomerTable> _searchCustomers(List<CustomerTable> customers, String query) {
+  if (query.isEmpty) return customers;
+  return customers.where((customer) =>
+    customer.name!.toLowerCase().contains(query.toLowerCase()) ||
+    customer.phone!.toLowerCase().contains(query.toLowerCase())
+  ).toList();
+}
+
+List<SupplierTable> _searchSuppliers(List<SupplierTable> suppliers, String query) {
+  if (query.isEmpty) return suppliers;
+  return suppliers.where((supplier) =>
+    supplier.companyName!.toLowerCase().contains(query.toLowerCase()) ||
+    supplier.contactPerson!.toLowerCase().contains(query.toLowerCase()) ||
+    supplier.phone!.toLowerCase().contains(query.toLowerCase())
+  ).toList();
+}
 
   void _handleMenuSelection(BuildContext context, String value) {
     if (value == 'add') {
@@ -190,31 +240,32 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
             Provider.of<PeopleProvider>(context, listen: false).refreshData(),
       );
     } else if (value == 'import') {
-  final currentTabIndex = _tabController.index;
-  final tabNames = ['Users', 'Customers', 'Suppliers'];
-  
-  if (currentTabIndex == 1) { // Customers tab
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ImportCustomersPage(),
-      ),
-    );
-  } else if (currentTabIndex == 2) { // Suppliers tab
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ImportSuppliersPage(),
-      ),
-    );
-  } else { // Users tab (index 0)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Import not available for ${tabNames[currentTabIndex]}'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-}
+      final currentTabIndex = _tabController.index;
+      final tabNames = ['Users', 'Customers', 'Suppliers'];
+
+      if (currentTabIndex == 1) {
+        // Customers tab
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ImportCustomersPage()),
+        );
+      } else if (currentTabIndex == 2) {
+        // Suppliers tab
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ImportSuppliersPage()),
+        );
+      } else {
+        // Users tab (index 0)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Import not available for ${tabNames[currentTabIndex]}',
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }

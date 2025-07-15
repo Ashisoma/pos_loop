@@ -6,7 +6,6 @@ import 'package:pos_desktop_loop/db/tables/business_table.dart';
 import 'package:pos_desktop_loop/db/tables/supplier_table.dart';
 
 class ImportSuppliersPage extends StatefulWidget {
-
   const ImportSuppliersPage({super.key});
 
   @override
@@ -25,43 +24,45 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Import Suppliers')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Supplier Import Guide',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Supplier Import Guide',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildImportGuide(),
-                  ],
+                      const SizedBox(height: 16),
+                      _buildImportGuide(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Select Excel File'),
-              onPressed: _isLoading ? null : _importSuppliers,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Select Excel File'),
+                onPressed: _isLoading ? null : _importSuppliers,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
-            ),
-            if (_isLoading) const LinearProgressIndicator(),
-            if (_successCount > 0 || _errorCount > 0 || _duplicateCount > 0)
-              _buildResultsSection(),
-          ],
+              if (_isLoading) const LinearProgressIndicator(),
+              if (_successCount > 0 || _errorCount > 0 || _duplicateCount > 0)
+                _buildResultsSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -230,26 +231,32 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
           String address = row[3]?.value?.toString() ?? '';
           String description = row[4]?.value?.toString() ?? '';
 
-          if (companyName.isEmpty || contactPerson.isEmpty || rawPhone.isEmpty) {
-            throw Exception('Missing required fields (Company, Contact Person, or Phone)');
+          if (companyName.isEmpty ||
+              contactPerson.isEmpty ||
+              rawPhone.isEmpty) {
+            throw Exception(
+              'Missing required fields (Company, Contact Person, or Phone)',
+            );
           }
 
           String phoneNumber = _formatPhoneNumber(rawPhone);
-          if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
-            throw Exception('Invalid phone number format');
-          }
+          // if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
+          //   throw Exception('Invalid phone number format');
+          // }
 
           phoneNumbersToCheck.add(phoneNumber);
           var business = await Business.getAllBusinesses();
 
-          suppliersToImport.add(SupplierTable(
-            companyName: companyName,
-            contactPerson: contactPerson,
-            phone: phoneNumber,
-            address: address,
-            description: description,
+          suppliersToImport.add(
+            SupplierTable(
+              companyName: companyName,
+              contactPerson: contactPerson,
+              phone: phoneNumber,
+              address: address,
+              description: description,
               businessId: business.first.id,
-          ));
+            ),
+          );
         } catch (e) {
           _errorCount++;
           _errors.add('Row $rowNumber: $e');
@@ -258,16 +265,19 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
 
       // Check for duplicates
       if (phoneNumbersToCheck.isNotEmpty) {
-        final existingNumbers = await _checkExistingPhoneNumbers(phoneNumbersToCheck);
+        final existingNumbers = await _checkExistingPhoneNumbers(
+          phoneNumbersToCheck,
+        );
 
-        suppliersToImport = suppliersToImport.where((supplier) {
-          if (existingNumbers.contains(supplier.phone)) {
-            _duplicateCount++;
-            _duplicates.add('${supplier.companyName} (${supplier.phone})');
-            return false;
-          }
-          return true;
-        }).toList();
+        suppliersToImport =
+            suppliersToImport.where((supplier) {
+              if (existingNumbers.contains(supplier.phone)) {
+                _duplicateCount++;
+                _duplicates.add('${supplier.companyName} (${supplier.phone})');
+                return false;
+              }
+              return true;
+            }).toList();
       }
 
       // Insert valid suppliers
@@ -317,7 +327,9 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
     return phone;
   }
 
-  Future<Set<String>> _checkExistingPhoneNumbers(List<String> phoneNumbers) async {
+  Future<Set<String>> _checkExistingPhoneNumbers(
+    List<String> phoneNumbers,
+  ) async {
     final insertService = LocalInsertService();
     Set<String> existingNumbers = {};
 

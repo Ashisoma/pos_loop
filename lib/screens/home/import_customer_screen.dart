@@ -6,9 +6,7 @@ import 'package:pos_desktop_loop/db/tables/business_table.dart';
 import 'package:pos_desktop_loop/db/tables/costomer_table.dart';
 
 class ImportCustomersPage extends StatefulWidget {
-
-  const ImportCustomersPage({ super.key})
- ;
+  const ImportCustomersPage({super.key});
 
   @override
   _ImportCustomersPageState createState() => _ImportCustomersPageState();
@@ -26,43 +24,45 @@ class _ImportCustomersPageState extends State<ImportCustomersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Import Customers')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Import Guide',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Import Guide',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildImportGuide(),
-                  ],
+                      const SizedBox(height: 16),
+                      _buildImportGuide(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Select Excel File'),
-              onPressed: _isLoading ? null : _importCustomers,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Select Excel File'),
+                onPressed: _isLoading ? null : _importCustomers,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
-            ),
-            if (_isLoading) const LinearProgressIndicator(),
-            if (_successCount > 0 || _errorCount > 0 || _duplicateCount > 0)
-              _buildResultsSection(),
-          ],
+              if (_isLoading) const LinearProgressIndicator(),
+              if (_successCount > 0 || _errorCount > 0 || _duplicateCount > 0)
+                _buildResultsSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -227,9 +227,9 @@ class _ImportCustomersPageState extends State<ImportCustomersPage> {
           }
 
           String phoneNumber = _formatPhoneNumber(rawPhone);
-          if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
-            throw Exception('Invalid phone number format');
-          }
+          // if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
+          //   throw Exception('Invalid phone number format');
+          // }
 
           phoneNumbersToCheck.add(phoneNumber);
           var business = await Business.getAllBusinesses();
