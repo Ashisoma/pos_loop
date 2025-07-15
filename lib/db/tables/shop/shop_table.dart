@@ -156,7 +156,7 @@ class ShopTable {
   }) async {
     Database db = await DatabaseHelper().database;
     try {
-        debugPrint('Shop with id $shopId');
+      debugPrint('Shop with id $shopId');
 
       final shop = await getShopById(shopId);
       if (shop == null) {
@@ -191,6 +191,29 @@ class ShopTable {
       debugPrint('Error in setManagerId: $e');
       return 0;
     }
+  }
+
+  static Future<int?> upsetShopManager(
+    int shopId,
+    String? newManagerId,
+  ) async {
+    final db = await DatabaseHelper().database;
+    final shop = await getShopById(shopId);
+
+    var updateShop = ShopTable(
+      shopId: shopId,
+      name: shop!.name,
+      phone: shop.phone,
+      branch: shop.branch,
+      isActive: shop.isActive,
+      managerId: null,
+    );
+    return await db.update(
+      tableShop,
+      updateShop.toJson(),
+      where: 'shop_id = ?',
+      whereArgs: [shopId],
+    );
   }
 
   static Future<int> updateShop(ShopTable shop) async {

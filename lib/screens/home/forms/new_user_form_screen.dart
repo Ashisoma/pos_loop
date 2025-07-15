@@ -43,7 +43,15 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
   void initState() {
     super.initState();
     _fetchData();
-    __loadShops();
+    _loadShops().then((_) {
+      // This runs after shops are loaded
+      if (widget.isEdit && widget.data != null) {
+        setState(() {
+          _selectedShops =
+              shops.where((shop) => shop.managerId == widget.data!.id).toList();
+        });
+      }
+    });
   }
 
   @override
@@ -127,7 +135,7 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                       obscureText: widget.isEdit ? true : !_visiblePassword,
                       decoration: InputDecoration(
                         labelText: 'Password*',
-                        
+
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -192,6 +200,34 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
                           ? const Padding(
                             padding: EdgeInsets.all(16.0),
                             child: CircularProgressIndicator(),
+                          )
+                          : widget.isEdit
+                          ? Column(
+                            children:
+                                shops.map((shop) {
+                                  final isManagedByUser =
+                                      shop.managerId == widget.data?.id;
+                                  return CheckboxListTile(
+                                    title: Text(
+                                      '${shop.name} - ${shop.branch}',
+                                    ),
+                                    value: _selectedShops.contains(shop),
+                                    onChanged:
+                                        _isLoading
+                                            ? null
+                                            : (bool? selected) {
+                                              setState(() {
+                                                if (selected == true) {
+                                                  _selectedShops.add(shop);
+                                                } else {
+                                                  _selectedShops.remove(shop);
+                                                }
+                                              });
+                                            },
+
+                                    // Visual indication for managed shops
+                                  );
+                                }).toList(),
                           )
                           : Column(
                             children:
@@ -297,24 +333,32 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
 
       // Handle shop assignment for non-admin roles
       if (_selectedRole?.value != 'admin') {
-        int shopId =
-            _selectedShops.isNotEmpty ? _selectedShops.first.shopId! : 0;
+        final userId = widget.isEdit ? widget.data!.id! : res;
 
-        print(shopId);
-        if (shopId > 0) {
-          int? assignmentResult = await AuthService.assignUserToShop(
-            user: widget.isEdit ? widget.data!.id! : res,
-            shopId: shopId,
+        // Get shops that were previously managed but are now unchecked
+        final previouslyManagedShops =
+            shops
+                .where(
+                  (shop) =>
+                      shop.managerId == widget.data?.id &&
+                      !_selectedShops.contains(shop),
+                )
+                .toList();
+
+        // Unassign these shops (set managerId to null or another value)
+        for (final shop in previouslyManagedShops) {
+          await ShopTable.upsetShopManager(
+            shop.shopId!,
+            null,
+          ); // Assuming this method exists
+        }
+
+        // Assign newly selected shops
+        for (final shop in _selectedShops) {
+          await AuthService.assignUserToShop(
+            user: userId,
+            shopId: shop.shopId!,
           );
-
-          // print(assignmentResult);
-
-          if (assignmentResult == null || assignmentResult <= 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to assign user to shop')),
-            );
-            return;
-          }
         }
       }
 
@@ -343,6 +387,11 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
       _emailController.text = widget.data!.email;
       _fullNameController.text = widget.data!.fullName;
 
+      setState(() {
+        _selectedShops =
+            shops.where((shop) => shop.managerId == widget.data!.id).toList();
+      });
+
       // Set role to the user's current role
       _selectedRole = RoleItem.items.firstWhere(
         (role) => role.value == widget.data!.role,
@@ -357,7 +406,7 @@ class _NewUserFormScreenState extends State<NewUserFormScreen> {
     }
   }
 
-  void __loadShops() async {
+  Future<void> _loadShops() async {
     setState(() => _isLoadingShops = true);
     try {
       var dbShops = await ShopTable.getAllShops();

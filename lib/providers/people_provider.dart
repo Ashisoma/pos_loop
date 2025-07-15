@@ -19,8 +19,6 @@ class PeopleProvider with ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-
-
   Future<void> fetchPeopleData() async {
     _isLoading = true;
     notifyListeners();
@@ -68,6 +66,28 @@ class PeopleProvider with ChangeNotifier {
     }
   }
 
+  Future<int?> registerCustomer(CustomerTable customer) async {
+    try {
+      int? res = await LocalInsertService().registerCustomer(customer);
+      await fetchPeopleData();
+      return res; // Refresh data after deletion
+    } catch (e) {
+      debugPrint('Error deleting item: $e');
+    }
+    return 0;
+  }
+
+  Future<int?> registerSupplier(SupplierTable sup) async {
+    try {
+      int? res = await LocalInsertService().registerSupplier(sup);
+      await fetchPeopleData(); // Refresh data after deletion
+      return res!;
+    } catch (e) {
+      debugPrint('Error deleting item: $e');
+    }
+    return 0;
+  }
+
   Future<bool> updateUserStatus(int userId, bool isActive) async {
     try {
       // Update status in database
@@ -90,25 +110,27 @@ class PeopleProvider with ChangeNotifier {
   }
 
   // In your provider class (e.g., DataProvider.dart)
-List<UserTable> searchUsers(String query) {
-  return users.where((user) {
-    return user.fullName.toLowerCase().contains(query.toLowerCase()) ||
-           user.email.toLowerCase().contains(query.toLowerCase());
-  }).toList();
-}
+  List<UserTable> searchUsers(String query) {
+    return users.where((user) {
+      return user.fullName.toLowerCase().contains(query.toLowerCase()) ||
+          user.email.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+  }
 
-List<CustomerTable> searchCustomers(String query) {
-  return customers.where((customer) {
-    return customer.name!.toLowerCase().contains(query.toLowerCase()) ||
-           customer.phone!.toLowerCase().contains(query.toLowerCase());
-  }).toList();
-}
+  List<CustomerTable> searchCustomers(String query) {
+    return customers.where((customer) {
+      return customer.name!.toLowerCase().contains(query.toLowerCase()) ||
+          customer.phone!.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+  }
 
-List<SupplierTable> searchSuppliers(String query) {
-  return suppliers.where((supplier) {
-    return supplier.companyName!.toLowerCase().contains(query.toLowerCase()) ||
-           supplier.contactPerson!.toLowerCase().contains(query.toLowerCase()) ||
-           supplier.phone!.toLowerCase().contains(query.toLowerCase());
-  }).toList();
-}
+  List<SupplierTable> searchSuppliers(String query) {
+    return suppliers.where((supplier) {
+      return supplier.companyName!.toLowerCase().contains(
+            query.toLowerCase(),
+          ) ||
+          supplier.contactPerson!.toLowerCase().contains(query.toLowerCase()) ||
+          supplier.phone!.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+  }
 }

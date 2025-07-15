@@ -3,6 +3,7 @@ import 'package:pos_desktop_loop/constants/app_colors.dart';
 import 'package:pos_desktop_loop/db/controllers/local_insert_service.dart';
 import 'package:pos_desktop_loop/db/tables/business_table.dart';
 import 'package:pos_desktop_loop/db/tables/supplier_table.dart';
+import 'package:pos_desktop_loop/screens/home/people_managemnt_screen.dart';
 
 class NewSupplierForm extends StatefulWidget {
   final bool isEdit;
@@ -208,7 +209,12 @@ class _NewSupplierFormState extends State<NewSupplierForm> {
         );
       }
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PeopleManagementScreen()),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,

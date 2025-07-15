@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/db/controllers/local_insert_service.dart';
 import 'package:pos_desktop_loop/db/tables/business_table.dart';
 import 'package:pos_desktop_loop/db/tables/supplier_table.dart';
+import 'package:pos_desktop_loop/providers/people_provider.dart';
+import 'package:provider/provider.dart';
 
 class ImportSuppliersPage extends StatefulWidget {
   const ImportSuppliersPage({super.key});
@@ -240,9 +242,9 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
           }
 
           String phoneNumber = _formatPhoneNumber(rawPhone);
-          // if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
-          //   throw Exception('Invalid phone number format');
-          // }
+          if (!RegExp(r'^\+254[17]\d{8}$').hasMatch(phoneNumber)) {
+            throw Exception('Invalid phone number format');
+          }
 
           phoneNumbersToCheck.add(phoneNumber);
           var business = await Business.getAllBusinesses();
@@ -282,9 +284,10 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
 
       // Insert valid suppliers
       if (suppliersToImport.isNotEmpty) {
-        final insertService = LocalInsertService();
+    final provider = Provider.of<PeopleProvider>(context, listen: false);
+
         for (var supplier in suppliersToImport) {
-          final result = await insertService.registerSupplier(supplier);
+          final result = await provider.registerSupplier(supplier);
           if (result != null && result > 0) {
             _successCount++;
           } else {
@@ -316,12 +319,16 @@ class _ImportSuppliersPageState extends State<ImportSuppliersPage> {
       return '+$digits';
     }
 
-    if (digits.startsWith('7') && digits.length == 9) {
+    if (digits.startsWith('7') || digits.length == 9) {
       return '+254$digits';
     }
 
     if (digits.startsWith('07') && digits.length == 10) {
       return '+254${digits.substring(1)}';
+    }
+
+    if (digits.startsWith('7')) {
+      return '+254$digits';
     }
 
     return phone;

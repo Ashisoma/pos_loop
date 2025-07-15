@@ -120,59 +120,72 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
         ],
       ),
       drawer: const CustomDrawerWidget(),
-      body:  TabBarView(
-            controller: _tabController,
-            children: [
-              Consumer<PeopleProvider>(
-      builder: (context, provider, _) {
-        final users = _searchUsers(provider.users, _searchQuery);
-        return ListView.builder(
-          itemCount: users.length,
-          itemBuilder: (_, index) => UserItemCard(
-            user: users[index],
-            onUpdate: provider.refreshData,
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          Consumer<PeopleProvider>(
+            builder: (context, provider, _) {
+              final users = _searchUsers(provider.users, _searchQuery);
+              return ListView.builder(
+                itemCount: users.length,
+                itemBuilder:
+                    (_, index) => UserItemCard(
+                      user: users[index],
+                      onUpdate: provider.refreshData,
+                    ),
+              );
+            },
           ),
-        );
-      },
-    ),
 
-    // Customers Tab
-    Consumer<PeopleProvider>(
-      builder: (context, provider, _) {
-        final customers = _searchCustomers(provider.customers, _searchQuery);
-        return ListView.builder(
-          itemCount: customers.length,
-          itemBuilder: (_, index) => CustomerItemCard(
-            customer: customers[index],
-            // onUpdate: provider.refreshData,
+          // Customers Tab
+          Consumer<PeopleProvider>(
+            builder: (context, provider, _) {
+              final customers = _searchCustomers(
+                provider.customers,
+                _searchQuery,
+              );
+              return ListView.builder(
+                itemCount: customers.length,
+                itemBuilder:
+                    (_, index) => CustomerItemCard(
+                      customer: customers[index],
+                      // onUpdate: provider.refreshData,
+                    ),
+              );
+            },
           ),
-        );
-      },
-    ),
 
-    // Suppliers Tab
-    Consumer<PeopleProvider>(
-      builder: (context, provider, _) {
-        final suppliers = _searchSuppliers(provider.suppliers, _searchQuery);
-        return ListView.builder(
-          itemCount: suppliers.length,
-          itemBuilder: (_, index) => SupplierItemCard(
-            supplier: suppliers[index],
-            // onUpdate: provider.refreshData,
+          // Suppliers Tab
+          Consumer<PeopleProvider>(
+            builder: (context, provider, _) {
+              final suppliers = _searchSuppliers(
+                provider.suppliers,
+                _searchQuery,
+              );
+              return ListView.builder(
+                itemCount: suppliers.length,
+                itemBuilder:
+                    (_, index) => SupplierItemCard(
+                      supplier: suppliers[index],
+                      // onUpdate: provider.refreshData,
+                    ),
+              );
+            },
           ),
-        );
-      },
-    ),
-            ]
+        ],
       ),
     );
   }
 
   Widget _buildSearchField() {
     return TextField(
+      autofocus: true,
       decoration: InputDecoration(
-        hintText: _getSearchHintText(),
-        prefixIcon: Icon(Icons.search),
+        hintText: "Search...",
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _toggleSearch,
+        ),
         border: InputBorder.none,
       ),
       onChanged: (value) {
@@ -183,43 +196,51 @@ class _PeopleManagementScreenState extends State<PeopleManagementScreen>
     );
   }
 
-  String _getSearchHintText() {
-    switch (_tabController.index) {
-      case 0: // Users
-        return 'name or email ${_tabController.index}';
-      case 1: // Customers
-        return 'name or phone ${_tabController.index}';
-      case 2: // Suppliers
-        return 'company, ${_tabController.index} contact or phone ';
-      default:
-        return 'Search';
-    }
-  }
+  
 
   List<UserTable> _searchUsers(List<UserTable> users, String query) {
-  if (query.isEmpty) return users;
-  return users.where((user) =>
-    user.fullName.toLowerCase().contains(query.toLowerCase()) ||
-    user.email.toLowerCase().contains(query.toLowerCase())
-  ).toList();
-}
+    if (query.isEmpty) return users;
+    return users
+        .where(
+          (user) =>
+              user.fullName.toLowerCase().contains(query.toLowerCase()) ||
+              user.email.toLowerCase().contains(query.toLowerCase()),
+        )
+        .toList();
+  }
 
-List<CustomerTable> _searchCustomers(List<CustomerTable> customers, String query) {
-  if (query.isEmpty) return customers;
-  return customers.where((customer) =>
-    customer.name!.toLowerCase().contains(query.toLowerCase()) ||
-    customer.phone!.toLowerCase().contains(query.toLowerCase())
-  ).toList();
-}
+  List<CustomerTable> _searchCustomers(
+    List<CustomerTable> customers,
+    String query,
+  ) {
+    if (query.isEmpty) return customers;
+    return customers
+        .where(
+          (customer) =>
+              customer.name!.toLowerCase().contains(query.toLowerCase()) ||
+              customer.phone!.toLowerCase().contains(query.toLowerCase()),
+        )
+        .toList();
+  }
 
-List<SupplierTable> _searchSuppliers(List<SupplierTable> suppliers, String query) {
-  if (query.isEmpty) return suppliers;
-  return suppliers.where((supplier) =>
-    supplier.companyName!.toLowerCase().contains(query.toLowerCase()) ||
-    supplier.contactPerson!.toLowerCase().contains(query.toLowerCase()) ||
-    supplier.phone!.toLowerCase().contains(query.toLowerCase())
-  ).toList();
-}
+  List<SupplierTable> _searchSuppliers(
+    List<SupplierTable> suppliers,
+    String query,
+  ) {
+    if (query.isEmpty) return suppliers;
+    return suppliers
+        .where(
+          (supplier) =>
+              supplier.companyName!.toLowerCase().contains(
+                query.toLowerCase(),
+              ) ||
+              supplier.contactPerson!.toLowerCase().contains(
+                query.toLowerCase(),
+              ) ||
+              supplier.phone!.toLowerCase().contains(query.toLowerCase()),
+        )
+        .toList();
+  }
 
   void _handleMenuSelection(BuildContext context, String value) {
     if (value == 'add') {
