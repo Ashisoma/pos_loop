@@ -2,12 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/constants/app_colors.dart';
 import 'package:pos_desktop_loop/db/tables/user_table.dart';
 import 'package:pos_desktop_loop/providers/user_provider.dart';
+import 'package:pos_desktop_loop/screens/home/settings_screen.dart';
 import 'package:provider/provider.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
+  const UserProfileScreen({super.key});
+
+  @override
+  _UserProfileState createState() => _UserProfileState();
+}
+
+class _UserProfileState extends State<UserProfileScreen> {
   final String userName = "Admin User"; // Replace with actual user name
 
-  const UserProfileScreen({super.key});
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -25,225 +40,164 @@ class UserProfileScreen extends StatelessWidget {
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            _buildProfileHeader(userProvider.user!),
-
-            // Account Section
-            _buildSectionCard(
-              title: 'Account Settings',
-              children: [
-                _buildProfileTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Personal Information',
-                  subtitle: 'Update your profile details',
-                  onTap: () {},
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              // Name Field
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
                 ),
-                _buildProfileTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Change Password',
-                  subtitle: 'Update your login credentials',
-                  onTap: () {},
-                ),
-                _buildProfileTile(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notification Preferences',
-                  subtitle: 'Manage app notifications',
-                  onTap: () {},
-                ),
-              ],
-            ),
-
-            // Preferences Section
-            _buildSectionCard(
-              title: 'Preferences',
-              children: [
-                _buildProfileTile(
-                  icon: Icons.color_lens_outlined,
-                  title: 'App Theme',
-                  subtitle: 'Change color scheme',
-                  onTap: () {},
-                ),
-                _buildProfileTile(
-                  icon: Icons.language_outlined,
-                  title: 'Language',
-                  subtitle: 'Set app language',
-                  onTap: () {},
-                ),
-              ],
-            ),
-
-            // Actions Section
-            _buildSectionCard(
-              title: 'Actions',
-              children: [
-                _buildProfileTile(
-                  icon: Icons.help_outline_rounded,
-                  title: 'Help & Support',
-                  subtitle: 'Contact our support team',
-                  onTap: () {},
-                ),
-                _buildProfileTile(
-                  icon: Icons.logout_rounded,
-                  title: 'Logout',
-                  subtitle: 'Sign out of your account',
-                  onTap: () {},
-                  color: Colors.red,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader(UserTable user) {
-    var initials = user.fullName;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        // color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Avatar with initials
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.primaryGreen.withOpacity(0.8),
-                  AppColors.primaryGreen,
-                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  return null;
+                },
               ),
-            ),
-            child: Center(
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              SizedBox(height: 16),
+
+              // Email Field
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ),
+              SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-
-          // User Name
-          Text(
-            user.fullName,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-          ),
-
-          const SizedBox(height: 8),
-
-          // User Role
-          Text(
-            user.role!.toUpperCase(),
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-          ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+              // New Password Field
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
+                obscureText: !_isPasswordVisible,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty && value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
-            ),
-            ...children,
-          ],
+              SizedBox(height: 16),
+
+              // Confirm Password Field
+              TextFormField(
+                controller: _confirmPasswordController,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: !_isConfirmPasswordVisible,
+                validator: (value) {
+                  if (value != null &&
+                      value.isNotEmpty &&
+                      value != _passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 24),
+
+              // Save Button
+              ElevatedButton(
+                onPressed: _updateProfile,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Save Changes', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProfileTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: (color ?? AppColors.primaryGreen).withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: color ?? AppColors.primaryGreen),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: color ?? Colors.black,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-      ),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: color ?? Colors.grey.shade400,
-      ),
-    );
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
-  String _getInitials(String name) {
-    final nameParts = name.split(' ');
-    if (nameParts.length > 1) {
-      return '${nameParts[0][0]}${nameParts[1][0]}';
-    } else if (name.isNotEmpty) {
-      return name.substring(0, 2).toUpperCase();
-    }
-    return 'AU';
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  loadData() {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+
+    setState(() {
+      _nameController.text = provider.user!.fullName!;
+      _emailController.text = provider.user!.email;
+      _passwordController.text = provider.user!.password;
+    });
+  }
+
+  void _updateProfile() {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    var updatedUser = UserTable(
+      password: _passwordController.text,
+      fullName: _nameController.text,
+      phoneNumber: "",
+      isActive: true,
+      email: _emailController.text,
+    );
+    provider.updateUser(updatedUser);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
   }
 }
