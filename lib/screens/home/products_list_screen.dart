@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pos_desktop_loop/providers/inventory_provider.dart';
 import 'package:pos_desktop_loop/screens/widgets/category_widget.dart';
 import 'package:pos_desktop_loop/screens/widgets/products_widget.dart';
+import 'package:pos_desktop_loop/screens/widgets/search_bar_widget.dart';
 import 'package:pos_desktop_loop/screens/widgets/search_widget.dart';
 import 'package:pos_desktop_loop/screens/widgets/tax_category.dart';
 import 'package:provider/provider.dart';
@@ -26,15 +27,21 @@ class ProductsListScreen extends StatefulWidget {
 class _ProductsListScreenState extends State<ProductsListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
   int? shopId;
+  String _searchQuery = '';
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _setShopId();
-    _tabController = TabController(length: 4, vsync: this);
-    // Fetch initial data
+    _tabController = TabController(length: 3, vsync: this); // Changed to 3 tabs
+    _tabController.addListener(() {
+      setState(() {
+        _currentTabIndex = _tabController.index;
+        _searchQuery = ''; // Clear search when changing tabs
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final productProvider = Provider.of<ProductsProvider>(
         context,
@@ -47,14 +54,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
       productProvider.fetchProducts();
       categoryProvider.fetchCategories();
       productProvider.fetchTaxCategories();
-      productProvider.fetchServiceProducts();
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -64,174 +64,50 @@ class _ProductsListScreenState extends State<ProductsListScreen>
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        actionsPadding: EdgeInsets.symmetric(horizontal: width * 0.01),
-        toolbarHeight: height * 0.1,
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primaryGreen,
-          unselectedLabelColor: Colors.black,
-          indicatorColor: AppColors.primaryGreen,
-          tabs: const [
-            Tab(text: 'Products'),
-            Tab(text: 'Services'),
-            Tab(text: 'Categories'),
-            Tab(text: 'Tax Categories'),
-          ],
-        ),
-        title: Text(
-          'Product Management',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w400,
-            color: AppColors.primaryGreen,
-          ),
-        ),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          PopupMenuButton<String>(
-            // use the three dotted icon for the menu
-            icon: Icon(Icons.more_vert, color: Colors.black),
-            onSelected: (value) {
-              final productProvider = Provider.of<ProductsProvider>(
-                context,
-                listen: false,
-              );
-              final categoryProvider = Provider.of<InventoryByShopProvider>(
-                context,
-                listen: false,
-              );
-
-              switch (value) {
-                case 'import':
-                  // Handle import based on current tab
-                  final tabNames = [
-                    'Products',
-                    'Services',
-                    'Categories',
-                    'Tax Categories',
-                  ];
-                  // Implement your import functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Import ${tabNames[_tabController.index]} functionality not implemented yet.',
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                  break;
-                case 'add':
-                  switch (_tabController.index) {
-                    case 0: // Products
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => NewProductScreen(
-                                shopId: shopId!,
-                                isEdit: false,
-                                isService: false,
-                              ),
-                        ),
-                      ).then((_) => productProvider.fetchProducts());
-                      break;
-                    case 1: // Services
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => NewProductScreen(
-                                isEdit: false,
-                                isService: true,
-                                shopId: shopId!,
-                              ),
-                        ),
-                      ).then((_) => productProvider.fetchServiceProducts());
-                      break;
-                    case 2: // Categories
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  const NewCategoryScreen(isEdit: false),
-                        ),
-                      ).then((_) => categoryProvider.fetchCategories());
-                      break;
-                    case 3: // Tax Categories
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  const NewTaxCategoryFormScreen(isEdit: false),
-                        ),
-                      ).then((_) => productProvider.fetchTaxCategories());
-                      break;
-                  }
-                  break;
-              }
-            },
-            itemBuilder:
-                (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'import',
-                    child: Text(
-                      'Import ${['Products', 'Services', 'Categories', 'Tax Categories'][_tabController.index]}',
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'add',
-                    child: Text(
-                      'Add new ${['product', 'service', 'category', 'tax category'][_tabController.index]}',
-                    ),
-                  ),
-                ],
-          ),
+      appBar: SearchAppBar(
+        shopId: shopId,
+        hintText:
+            'Search ${['items', 'categories', 'tax categories'][_tabController.index]}...',
+        onChanged: (query) {
+          setState(() {
+            _searchQuery = query;
+          });
+        },
+        searchQuery: _searchQuery,
+        tabController: _tabController,
+        tabs: const [
+          Tab(text: 'Products & Services'),
+          Tab(text: 'Categories'),
+          Tab(text: 'Tax Categories'),
         ],
       ),
       drawer: const CustomDrawerWidget(),
       body: TabBarView(
         controller: _tabController,
         children: [
+          // Merged Products & Services tab
           Consumer<ProductsProvider>(
             builder: (context, provider, _) {
               final categoryProvider = Provider.of<InventoryByShopProvider>(
                 context,
               );
-              return ProductsTabWidget(
+              return ProductsAndServicesTabWidget(
                 height: height,
                 width: width,
                 products: provider.products,
-                isService: false,
+                searchQuery: _searchQuery,
                 categories: categoryProvider.categories,
               );
             },
           ),
-          Consumer<ProductsProvider>(
-            builder: (context, provider, _) {
-              final categoryProvider = Provider.of<InventoryByShopProvider>(
-                context,
-              );
-              return ProductsTabWidget(
-                height: height,
-                width: width,
-                products: provider.serviceProducts,
-                isService: true,
-                categories: categoryProvider.categories,
-              );
-            },
-          ),
+          // Rest remains the same
           Consumer<InventoryByShopProvider>(
             builder:
                 (context, provider, _) => CategoriesTabWidget(
                   height: height,
                   width: width,
                   categories: provider.categories,
+                  searchQuery: _searchQuery,
                 ),
           ),
           Consumer<ProductsProvider>(
@@ -240,6 +116,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   height: height,
                   width: width,
                   categories: provider.taxCategories,
+                  searchQuery: _searchQuery,
                 ),
           ),
         ],
@@ -255,43 +132,47 @@ class _ProductsListScreenState extends State<ProductsListScreen>
   }
 }
 
-class ProductsTabWidget extends StatefulWidget {
-  final bool isService;
+class ProductsAndServicesTabWidget extends StatefulWidget {
   final double height;
   final double width;
   final List<ProductsTable> products;
   final List<CategoriesTable> categories;
+  final String searchQuery;
 
-  const ProductsTabWidget({
+  const ProductsAndServicesTabWidget({
     super.key,
     required this.height,
     required this.width,
     required this.products,
-    this.isService = false,
     required this.categories,
+    required this.searchQuery,
   });
 
   @override
-  State<ProductsTabWidget> createState() => _ProductsTabWidgetState();
+  State<ProductsAndServicesTabWidget> createState() =>
+      _ProductsAndServicesTabWidgetState();
 }
 
-class _ProductsTabWidgetState extends State<ProductsTabWidget> {
-  String _searchQuery = '';
+class _ProductsAndServicesTabWidgetState
+    extends State<ProductsAndServicesTabWidget> {
   int? _selectedCategoryId;
+  bool _showProducts = true;
+  bool _showServices = true;
 
   @override
   Widget build(BuildContext context) {
-    // get categories from the provider
-    final categoryProvider = Provider.of<InventoryByShopProvider>(context);
     List<ProductsTable> filtered =
         widget.products.where((product) {
           final matchesSearch = product.name.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
+            widget.searchQuery.toLowerCase(),
           );
           final matchesCategory =
               _selectedCategoryId == null ||
               product.categoryId == _selectedCategoryId;
-          return matchesSearch && matchesCategory;
+          final matchesType =
+              (_showProducts && !product.isService) ||
+              (_showServices && product.isService);
+          return matchesSearch && matchesCategory && matchesType;
         }).toList();
 
     return Container(
@@ -302,29 +183,56 @@ class _ProductsTabWidgetState extends State<ProductsTabWidget> {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Column(
+            child: Row(
               children: [
-                ReusableSearchBar(
-                  hintText:
-                      'Search ${widget.isService ? "services" : "products"}...',
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedCategoryId,
-                  hint: const Text("Filter by Category"),
-                  isExpanded: true,
-                  onChanged: (val) => setState(() => _selectedCategoryId = val),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text("All Categories"),
-                    ),
-                    ...categoryProvider.categories.map(
-                      (cat) => DropdownMenuItem(
-                        value: cat.id,
-                        child: Text(cat.name),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _selectedCategoryId,
+                    hint: const Text("Filter by Category"),
+                    isExpanded: true,
+                    onChanged:
+                        (val) => setState(() => _selectedCategoryId = val),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text("All Categories"),
                       ),
+                      ...widget.categories.map(
+                        (cat) => DropdownMenuItem(
+                          value: cat.id,
+                          child: Text(cat.name),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  children: [
+                    FilterChip(
+                      label: const Text('Products'),
+                      selected: _showProducts,
+                      onSelected: (bool selected) {
+                        setState(() {
+                          _showProducts = selected;
+                          if (!_showProducts && !_showServices) {
+                            _showServices = true;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      label: const Text('Services'),
+                      selected: _showServices,
+                      onSelected: (bool selected) {
+                        setState(() {
+                          _showServices = selected;
+                          if (!_showProducts && !_showServices) {
+                            _showProducts = true;
+                          }
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -332,10 +240,7 @@ class _ProductsTabWidgetState extends State<ProductsTabWidget> {
             ),
           ),
           const SizedBox(height: 8),
-
-          /// ⬇️ Only this section scrolls
-          SizedBox(
-            height: widget.height * 0.6,
+          Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
                 left: widget.width * 0.02,
@@ -350,7 +255,7 @@ class _ProductsTabWidgetState extends State<ProductsTabWidget> {
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 40),
                               child: Text(
-                                'No products/services found',
+                                'No items found',
                                 style: TextStyle(fontSize: 18),
                               ),
                             ),
@@ -363,6 +268,9 @@ class _ProductsTabWidgetState extends State<ProductsTabWidget> {
                             height: widget.height,
                             index: index,
                             product: filtered[index],
+                            // onEdit: () => _handleEditProduct(filtered[index]),
+                            // onDelete:
+                            // () => _handleDeleteProduct(filtered[index]),
                           ),
                         ),
               ),
@@ -372,18 +280,72 @@ class _ProductsTabWidgetState extends State<ProductsTabWidget> {
       ),
     );
   }
+
+  void _handleEditProduct(ProductsTable product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => NewProductScreen(
+              shopId: product.shopId!,
+              isEdit: true,
+              isService: product.isService,
+              product: product,
+            ),
+      ),
+    ).then((_) {
+      // Refresh data after editing
+      Provider.of<ProductsProvider>(context, listen: false).fetchProducts();
+    });
+  }
+
+  Future<void> _handleDeleteProduct(ProductsTable product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirm Delete'),
+            content: Text('Are you sure you want to delete ${product.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      final success = await ProductsTable.deleteProduct(product.id!);
+      if ((success == 1) && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${product.name} deleted successfully')),
+        );
+        Provider.of<ProductsProvider>(context, listen: false).fetchProducts();
+      }
+    }
+  }
 }
 
 class CategoriesTabWidget extends StatefulWidget {
   final double height;
   final double width;
   final List<CategoriesTable> categories;
+  final String searchQuery;
 
   const CategoriesTabWidget({
     super.key,
     required this.height,
     required this.width,
     required this.categories,
+    required this.searchQuery,
   });
 
   @override
@@ -391,15 +353,14 @@ class CategoriesTabWidget extends StatefulWidget {
 }
 
 class _CategoriesTabWidgetState extends State<CategoriesTabWidget> {
-  String _searchQuery = '';
-
   @override
   Widget build(BuildContext context) {
     final filtered =
         widget.categories
             .where(
-              (cat) =>
-                  cat.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+              (cat) => cat.name.toLowerCase().contains(
+                widget.searchQuery.toLowerCase(),
+              ),
             )
             .toList();
 
@@ -416,10 +377,6 @@ class _CategoriesTabWidgetState extends State<CategoriesTabWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ReusableSearchBar(
-                onChanged: (val) => setState(() => _searchQuery = val),
-                hintText: 'Search categories...',
-              ),
               const SizedBox(height: 16),
 
               if (filtered.isEmpty)
@@ -427,7 +384,7 @@ class _CategoriesTabWidgetState extends State<CategoriesTabWidget> {
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: Text(
-                      'No products/services found',
+                      'No categories found',
                       style: TextStyle(fontSize: 18),
                     ),
                   ),
@@ -456,12 +413,14 @@ class TaxCategoriesTabWidget extends StatefulWidget {
   final double height;
   final double width;
   final List<TaxCategoryTable> categories;
+  final String searchQuery;
 
   const TaxCategoriesTabWidget({
     super.key,
     required this.height,
     required this.width,
     required this.categories,
+    required this.searchQuery,
   });
 
   @override
@@ -469,15 +428,14 @@ class TaxCategoriesTabWidget extends StatefulWidget {
 }
 
 class _TaxCategoriesTabWidgetState extends State<TaxCategoriesTabWidget> {
-  String _searchQuery = '';
-
   @override
   Widget build(BuildContext context) {
     final filtered =
         widget.categories
             .where(
-              (cat) =>
-                  cat.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+              (cat) => cat.name.toLowerCase().contains(
+                widget.searchQuery.toLowerCase(),
+              ),
             )
             .toList();
 
@@ -487,11 +445,6 @@ class _TaxCategoriesTabWidgetState extends State<TaxCategoriesTabWidget> {
         color: AppColors.naturalBackground,
         child: Column(
           children: [
-            const SizedBox(height: 8),
-            ReusableSearchBar(
-              onChanged: (val) => setState(() => _searchQuery = val),
-              hintText: 'Search tax categories...',
-            ),
             const SizedBox(height: 8),
             Expanded(
               child: Container(

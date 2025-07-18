@@ -3,11 +3,13 @@ import 'package:pos_desktop_loop/db/controllers/local_find_service.dart';
 import 'package:pos_desktop_loop/db/tables/shop/shop_table.dart';
 import 'package:pos_desktop_loop/screens/home/forms/new_order_screen.dart';
 import 'package:pos_desktop_loop/constants/app_colors.dart';
+import 'package:pos_desktop_loop/screens/home/products_list_screen.dart';
 import 'package:pos_desktop_loop/screens/widgets/custom_drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SelectShopScreen extends StatefulWidget {
-  const SelectShopScreen({super.key});
+  final String? route;
+  const SelectShopScreen({super.key, this.route});
 
   @override
   State<SelectShopScreen> createState() => _SelectShopScreenState();
@@ -70,7 +72,11 @@ class _SelectShopScreenState extends State<SelectShopScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => NewOrderScreen(shopId: shop.shopId!),
+                          builder:
+                              (_) =>
+                                  widget.route == "products"
+                                      ? ProductsListScreen()
+                                      : NewOrderScreen(shopId: shop.shopId!),
                         ),
                       );
                     },

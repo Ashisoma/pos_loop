@@ -59,9 +59,10 @@ class ProductsProvider extends ChangeNotifier {
   }
 
   /// Add a new product and refresh the list
-  Future<void> addProduct(ProductsTable product) async {
-    await ProductsTable.insertProduct(product);
-    await fetchProducts(); // refresh list
+  Future<int> addProduct(ProductsTable product) async {
+    var res = await ProductsTable.insertProduct(product);
+    await fetchProducts();
+    return res; // refresh list
   }
 
   // update service products

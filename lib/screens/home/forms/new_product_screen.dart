@@ -268,7 +268,7 @@ class _NewProductScreenState extends State<NewProductScreen> {
                                     : Text(
                                       widget.isEdit ? 'UPDATE' : 'SUBMIT',
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: Colors.black,
                                       ),
                                     ),
                           ),

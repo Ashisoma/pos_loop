@@ -83,6 +83,21 @@ class TaxCategoryTable {
     );
   }
 
+
+    static Future<TaxCategoryTable?> getCategoryByName(String name) async {
+    Database db = await DatabaseHelper().database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableCategories,
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+
+    if (maps.isNotEmpty) {
+      return TaxCategoryTable.fromSqfliteDataBase(maps.first);
+    }
+    return null;
+  }
+
   static Future<int> deleteTaxCategory(int id) async {
     Database db = await DatabaseHelper().database;
     return await db.delete(tableCategories, where: 'id = ?', whereArgs: [id]);

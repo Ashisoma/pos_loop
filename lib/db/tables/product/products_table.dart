@@ -131,7 +131,18 @@ class ProductsTable {
     return result.map((e) => ProductsTable.fromSqfliteDataBase(e)).toList();
   }
 
-  static Future<bool> productExists(String name) async {
+  static Future<bool> productValidExists(String name, int categoryId,int shopId) async {
+    Database db = await DatabaseHelper().database;
+    List<Map<String, dynamic>> result = await db.query(
+      tableProducts,
+      where: 'name = ?, category_id = ?, shop_id = ?',
+      whereArgs: [name, categoryId, shopId],
+    );
+    return result.isNotEmpty;
+  }
+
+
+   static Future<bool> productExists(String name) async {
     Database db = await DatabaseHelper().database;
     List<Map<String, dynamic>> result = await db.query(
       tableProducts,

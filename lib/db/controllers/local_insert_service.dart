@@ -154,9 +154,13 @@ class LocalInsertService {
     return await CustomerTable.customerExists(phone);
   }
 
-
   Future<bool> supplierExists(String phone) async {
     return await SupplierTable.supplierExists(phone);
+  }
+
+  Future<bool> productExists(String name, int categoryId, int i) async {
+    // get product by name category id and shop id
+    return await ProductsTable.productValidExists(name,categoryId, i);
   }
 
   //   Future<List<ProductsTable>> fetchProductsByShop(int shopId) async {
